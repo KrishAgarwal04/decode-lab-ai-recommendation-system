@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>Project 3: AI Recommendation Logic</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root{
+    --bg: #1A1A1E;
+    --bg-grid: #242429;
+    --panel: #212126;
+    --panel-line: #38383F;
+    --mint: #5EEAD4;
+    --mint-dim: #3A6D64;
+    --amber: #F5B759;
+    --text: #ECECEF;
+    --text-dim: #98989F;
+    --white: #FFFFFF;
+    --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    --font-body: 'Inter', 'Segoe UI', sans-serif;
+  }
+
+  html[data-theme="light"] {
+    --bg: #F6F7FB;
+    --bg-grid: #E4E9F5;
+    --panel: #FFFFFF;
+    --panel-line: #D2DAEB;
+    --mint: #0E8F82;
+    --mint-dim: #A9D8D1;
+    --amber: #C97516;
+    --text: #16233B;
+    --text-dim: #5B6B87;
+    --white: #16233B;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0 / 32px 32px,
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0 / 32px 32px,
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    padding: 32px 16px 64px;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  header {
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--panel-line);
+    padding-bottom: 20px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--mint);
+    text-transform: uppercase;
+    margin: 0 0 8px 0;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 14px;
+    max-width: 420px;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+
+  .status-box {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    padding: 12px 16px;
+    min-width: 200px;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+  }
+  .status-box .row { display:flex; justify-content: space-between; gap: 18px; padding: 3px 0; }
+  .status-box .label { color: var(--text-dim); }
+  .status-box .value { color: var(--mint); }
+
+  .theme-toggle {
+    display: flex;
+    border: 1px solid var(--panel-line);
+    width: fit-content;
+    margin-bottom: 10px;
+  }
+  .theme-toggle button {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .theme-toggle button.active {
+    background: var(--mint);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .theme-toggle button:not(.active):hover { color: var(--text); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 760px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    padding: 20px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .panel-title {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0 0 4px 0;
+  }
+  .panel-title span { color: var(--mint); }
+
+  .panel-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+  }
+
+  .tag-group { margin-bottom: 18px; }
+  .tag-group-label {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    display:block;
+  }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .tag-btn {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--panel-line);
+    color: var(--text-dim);
+    padding: 7px 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+  .tag-btn:hover { border-color: var(--mint-dim); color: var(--text); background: rgba(255,255,255,0.06); }
+  .tag-btn.active {
+    border-color: var(--mint);
+    color: var(--bg);
+    background: var(--mint);
+    font-weight: 600;
+  }
+
+  .run-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--amber);
+    color: var(--bg);
+    border: none;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+  }
+  .run-btn:hover { opacity: 0.88; }
+  .run-btn:active { transform: scale(0.98); }
+  .run-btn:disabled { background: var(--panel-line); color: var(--text-dim); cursor: not-allowed; }
+
+  .hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 10px;
+    font-family: var(--font-mono);
+  }
+
+  /* Results / matching web */
+  .results-panel { min-height: 420px; }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 360px;
+    color: var(--text-dim);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .empty-state svg { margin-bottom: 16px; opacity: 0.6; }
+
+  .web-svg { width: 100%; height: auto; display:block; margin-bottom: 8px; }
+
+  .node-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    fill: var(--text-dim);
+  }
+
+  .result-list { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+
+  .result-card {
+    border: 1px solid var(--panel-line);
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.035);
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards;
+  }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .rank {
+    font-family: var(--font-mono);
+    color: var(--mint);
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .result-main .title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15.5px;
+    margin: 0 0 4px 0;
+  }
+  .result-main .tagline {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 0 0 6px 0;
+  }
+  .result-main .match-tags {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--mint);
+  }
+
+  .score-wrap { text-align: right; min-width: 84px; }
+  .score-num {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    color: var(--amber);
+    font-weight: 700;
+    line-height: 1;
+  }
+  .score-bar {
+    width: 84px;
+    height: 4px;
+    background: var(--panel-line);
+    margin-top: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    position: absolute;
+    left:0; top:0; bottom:0;
+    background: var(--amber);
+    width: 0%;
+    transition: width 0.6s ease;
+  }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--panel-line);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    display:flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="eyebrow">Project 3</p>
+      <h1>AI Recommendation Logic</h1>
+      <p class="subtitle">Select your interests. The engine scores every item in the catalog by similarity to your picks and returns the closest matches.</p>
+    </div>
+    <div>
+      <div class="theme-toggle" id="themeToggle">
+        <button data-theme-btn="dark" class="active">Dark</button>
+        <button data-theme-btn="light">Light</button>
+      </div>
+    <div class="status-box">
+      <div class="row"><span class="label">METHOD</span><span class="value">Weighted similarity</span></div>
+      <div class="row"><span class="label">CATALOG SIZE</span><span class="value" id="catalogSize">--</span></div>
+      <div class="row"><span class="label">SELECTED TAGS</span><span class="value" id="selectedCount">0</span></div>
+      <div class="row"><span class="label">STATE</span><span class="value" id="stateLabel">idle</span></div>
+    </div>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <p class="panel-title"><span>01 /</span> Preference Input</p>
+      <p class="panel-desc">Take user input — tap the interests that describe what you're in the mood for.</p>
+
+      <div id="tagGroups"></div>
+
+      <button class="run-btn" id="runBtn" disabled>Run recommendation</button>
+      <p class="hint">Select at least 1 interest to enable matching</p>
+    </div>
+
+    <!-- RESULTS PANEL -->
+    <div class="panel results-panel">
+      <p class="panel-title"><span>02 /</span> Matching &amp; Recommendations</p>
+      <p class="panel-desc">Match preferences using logic or similarity, then display recommended items.</p>
+
+      <div id="emptyState" class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="14" r="5" style="stroke:var(--mint)" stroke-width="1.5"/>
+          <circle cx="14" cy="46" r="5" style="stroke:var(--text-dim)" stroke-width="1.5"/>
+          <circle cx="32" cy="46" r="5" style="stroke:var(--text-dim)" stroke-width="1.5"/>
+          <circle cx="50" cy="46" r="5" style="stroke:var(--text-dim)" stroke-width="1.5"/>
+          <line x1="32" y1="19" x2="14" y2="41" style="stroke:var(--panel-line)" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <line x1="32" y1="19" x2="32" y2="41" style="stroke:var(--panel-line)" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <line x1="32" y1="19" x2="50" y2="41" style="stroke:var(--panel-line)" stroke-width="1.5" stroke-dasharray="3 3"/>
+        </svg>
+        <div>Waiting for input.<br>Select interests and run the engine.</div>
+      </div>
+
+      <svg id="webSvg" class="web-svg" viewBox="0 0 600 220" style="display:none;"></svg>
+      <div id="resultList" class="result-list"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>KEY SKILLS: logic building &middot; pattern matching &middot; recommendation concepts</span>
+    <span id="clock"></span>
+  </footer>
+
+</div>
+
+<script>
+/* ---------- Catalog: items tagged by interest ---------- */
+const CATALOG = [
+  { title: "Signal Loss",        tagline: "A slow-burn sci-fi mystery about a lost transmission.", tags: ["sci-fi","mystery","slow-burn"] },
+  { title: "Paper Cranes",       tagline: "A quiet animated story about grief and letting go.", tags: ["animation","drama","emotional"] },
+  { title: "Nightshift Protocol",tagline: "Cyberpunk heist thriller set across three timezones.", tags: ["sci-fi","thriller","heist"] },
+  { title: "The Long Kitchen",   tagline: "Cozy slice-of-life following a family restaurant.", tags: ["comedy","slice-of-life","cozy"] },
+  { title: "Iron & Ash",         tagline: "Gritty fantasy war epic with morally gray leads.", tags: ["fantasy","war","dark"] },
+  { title: "Static Bloom",       tagline: "Psychological horror exploring memory and isolation.", tags: ["horror","psychological","slow-burn"] },
+  { title: "Two Left Shoes",     tagline: "Buddy comedy about mismatched roommates.", tags: ["comedy","slice-of-life","feel-good"] },
+  { title: "Deepwater Accord",   tagline: "Political thriller set on an underwater research station.", tags: ["thriller","sci-fi","political"] },
+  { title: "Glasshouse",         tagline: "Romantic drama about second chances.", tags: ["drama","romance","emotional"] },
+  { title: "The Cartographer",   tagline: "Adventure fantasy following a mapmaker into myth.", tags: ["fantasy","adventure","cozy"] },
+  { title: "Low Orbit",          tagline: "Hard sci-fi about a stranded space engineer.", tags: ["sci-fi","survival","slow-burn"] },
+  { title: "Punchline",          tagline: "Fast, absurd workplace comedy.", tags: ["comedy","feel-good","fast-paced"] },
+  { title: "Hollow Choir",       tagline: "Supernatural horror set in an abandoned town.", tags: ["horror","supernatural","dark"] },
+  { title: "Rivermouth",         tagline: "Coming-of-age drama along a small river town.", tags: ["drama","slice-of-life","emotional"] },
+  { title: "Vantage",            tagline: "High-stakes political thriller inside a fractured government.", tags: ["thriller","political","fast-paced"] },
+];
+
+const ALL_TAGS = {
+  "Genre": ["sci-fi","fantasy","horror","comedy","drama","thriller"],
+  "Mood": ["dark","cozy","feel-good","emotional","slow-burn","fast-paced"],
+  "Flavor": ["mystery","romance","adventure","survival","political","heist"]
+};
+
+let selected = new Set();
+
+/* ---------- Build tag UI ---------- */
+const tagGroupsEl = document.getElementById('tagGroups');
+Object.entries(ALL_TAGS).forEach(([group, tags]) => {
+  const wrap = document.createElement('div');
+  wrap.className = 'tag-group';
+  const label = document.createElement('span');
+  label.className = 'tag-group-label';
+  label.textContent = group;
+  wrap.appendChild(label);
+  const tagsWrap = document.createElement('div');
+  tagsWrap.className = 'tags';
+  tags.forEach(tag => {
+    const btn = document.createElement('button');
+    btn.className = 'tag-btn';
+    btn.textContent = tag;
+    btn.dataset.tag = tag;
+    btn.addEventListener('click', () => toggleTag(tag, btn));
+    tagsWrap.appendChild(btn);
+  });
+  wrap.appendChild(tagsWrap);
+  tagGroupsEl.appendChild(wrap);
+});
+
+document.getElementById('catalogSize').textContent = CATALOG.length + ' items';
+
+function toggleTag(tag, btn){
+  if (selected.has(tag)) {
+    selected.delete(tag);
+    btn.classList.remove('active');
+  } else {
+    selected.add(tag);
+    btn.classList.add('active');
+  }
+  document.getElementById('selectedCount').textContent = selected.size;
+  const runBtn = document.getElementById('runBtn');
+  runBtn.disabled = selected.size === 0;
+  document.getElementById('stateLabel').textContent = selected.size === 0 ? 'idle' : 'ready';
+}
+
+/* ---------- Similarity logic: weighted (TF-IDF style) Jaccard ---------- */
+/* Plain Jaccard treats every tag as equally informative, so a common tag like
+   "drama" carries the same weight as a specific one like "heist". That makes
+   weak, broad matches score too close to strong, specific ones.
+   Fix: weight each tag by rarity across the catalog (fewer items carry it ->
+   higher weight when matched), then take the weighted intersection over the
+   weighted union. Rarer shared interests now count for more, and matches are
+   also required to cover a meaningful share of what the user picked. */
+function computeTagWeights(catalog){
+  const freq = {};
+  catalog.forEach(item => item.tags.forEach(t => { freq[t] = (freq[t] || 0) + 1; }));
+  const weights = {};
+  Object.keys(freq).forEach(t => {
+    weights[t] = 1 + Math.log(catalog.length / freq[t]); // rarer tag -> higher weight
+  });
+  return weights;
+}
+const TAG_WEIGHTS = computeTagWeights(CATALOG);
+
+function weightedSimilarity(setA, arrB, weights){
+  const setB = new Set(arrB);
+  const matched = [...setA].filter(t => setB.has(t));
+  const union = new Set([...setA, ...setB]);
+
+  const weightSum = arr => arr.reduce((sum, t) => sum + (weights[t] || 1), 0);
+  const matchedWeight = weightSum(matched);
+  const unionWeight = weightSum([...union]);
+
+  const weightedJaccard = unionWeight === 0 ? 0 : matchedWeight / unionWeight;
+  const coverage = setA.size === 0 ? 0 : matched.length / setA.size; // % of user picks satisfied
+
+  // Blend: mostly rarity-weighted overlap, with a coverage term so an item
+  // that only echoes a sliver of what the user picked can't outrank one
+  // that actually satisfies most of their selection.
+  const score = (weightedJaccard * 0.7) + (coverage * 0.3);
+
+  return { score, matched };
+}
+
+let lastScored = null;
+
+function runRecommendation(){
+  document.getElementById('stateLabel').textContent = 'matching...';
+  const runBtn = document.getElementById('runBtn');
+  runBtn.disabled = true;
+
+  const scored = CATALOG.map(item => {
+    const { score, matched } = weightedSimilarity(selected, item.tags, TAG_WEIGHTS);
+    return { ...item, score, matched };
+  })
+  .filter(item => item.matched.length > 0)
+  .sort((a,b) => b.score - a.score || b.matched.length - a.matched.length)
+  .slice(0, 5);
+
+  setTimeout(() => {
+    lastScored = scored;
+    renderResults(scored);
+    document.getElementById('stateLabel').textContent = 'done';
+    runBtn.disabled = false;
+  }, 350);
+}
+
+document.getElementById('runBtn').addEventListener('click', runRecommendation);
+
+/* ---------- Render: matching web + result list ---------- */
+function renderResults(scored){
+  document.getElementById('emptyState').style.display = 'none';
+  const svg = document.getElementById('webSvg');
+  const listEl = document.getElementById('resultList');
+  listEl.innerHTML = '';
+
+  if (scored.length === 0) {
+    svg.style.display = 'none';
+    listEl.innerHTML = '<div class="empty-state" style="height:200px;">No matches found for this combination. Try different interests.</div>';
+    return;
+  }
+
+  // Build web diagram: center node = "you", right nodes = top results
+  svg.style.display = 'block';
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const centerX = 90, centerY = 110;
+
+  const rootStyle = getComputedStyle(document.documentElement);
+  const cMint = rootStyle.getPropertyValue('--mint').trim();
+  const cAmber = rootStyle.getPropertyValue('--amber').trim();
+  const cBg = rootStyle.getPropertyValue('--bg').trim();
+  const cPanelLine = rootStyle.getPropertyValue('--panel-line').trim();
+
+  const centerCircle = document.createElementNS(ns,'circle');
+  centerCircle.setAttribute('cx', centerX);
+  centerCircle.setAttribute('cy', centerY);
+  centerCircle.setAttribute('r', 22);
+  centerCircle.setAttribute('style', `fill:${cMint}`);
+  svg.appendChild(centerCircle);
+
+  const centerText = document.createElementNS(ns,'text');
+  centerText.setAttribute('x', centerX);
+  centerText.setAttribute('y', centerY + 4);
+  centerText.setAttribute('text-anchor','middle');
+  centerText.setAttribute('font-family','JetBrains Mono, monospace');
+  centerText.setAttribute('font-size','10');
+  centerText.setAttribute('font-weight','700');
+  centerText.setAttribute('style', `fill:${cBg}`);
+  centerText.textContent = 'YOU';
+  svg.appendChild(centerText);
+
+  const n = scored.length;
+  const spacing = 200 / Math.max(n - 1, 1);
+  scored.forEach((item, i) => {
+    const nodeX = 500;
+    const nodeY = n === 1 ? 110 : 20 + i * spacing;
+    const opacity = 0.25 + item.score * 0.75;
+    const strokeWidth = 1 + item.score * 4;
+
+    const line = document.createElementNS(ns,'line');
+    line.setAttribute('x1', centerX + 22);
+    line.setAttribute('y1', centerY);
+    line.setAttribute('x2', nodeX - 10);
+    line.setAttribute('y2', nodeY);
+    line.setAttribute('style', `stroke:${cAmber}`);
+    line.setAttribute('stroke-width', strokeWidth);
+    line.setAttribute('stroke-opacity', opacity);
+    svg.appendChild(line);
+
+    const nodeCircle = document.createElementNS(ns,'circle');
+    nodeCircle.setAttribute('cx', nodeX);
+    nodeCircle.setAttribute('cy', nodeY);
+    nodeCircle.setAttribute('r', 6 + item.score * 6);
+    nodeCircle.setAttribute('style', `fill:${i === 0 ? cAmber : cPanelLine}; stroke:${cAmber}`);
+    nodeCircle.setAttribute('stroke-width', '1');
+    svg.appendChild(nodeCircle);
+
+    const label = document.createElementNS(ns,'text');
+    label.setAttribute('x', nodeX + 14);
+    label.setAttribute('y', nodeY + 3);
+    label.setAttribute('class','node-label');
+    label.textContent = item.title + '  ' + Math.round(item.score*100) + '%';
+    svg.appendChild(label);
+  });
+
+  // result cards
+  scored.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.style.animationDelay = (i * 0.08) + 's';
+    card.innerHTML = `
+      <div class="rank">${i+1}</div>
+      <div class="result-main">
+        <p class="title">${item.title}</p>
+        <p class="tagline">${item.tagline}</p>
+        <p class="match-tags">matched: ${item.matched.join(', ')}</p>
+      </div>
+      <div class="score-wrap">
+        <div class="score-num">${Math.round(item.score*100)}%</div>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${Math.round(item.score*100)}%"></div></div>
+      </div>
+    `;
+    listEl.appendChild(card);
+  });
+}
+
+/* ---------- theme toggle (dark / light only) ---------- */
+const themeButtons = document.querySelectorAll('[data-theme-btn]');
+themeButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.themeBtn;
+    document.documentElement.setAttribute('data-theme', mode);
+    themeButtons.forEach(b => b.classList.toggle('active', b === btn));
+    // redraw the matching web (if it's on screen) so its colors match the new theme
+    if (lastScored) renderResults(lastScored);
+  });
+});
+
+/* ---------- footer clock ---------- */
+function tick(){
+  const now = new Date();
+  document.getElementById('clock').textContent = 'ENGINE READY · ' + now.toLocaleTimeString();
+}
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
